@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -x
+
+pushd _build
+rm -rf ./*
+cmake ..
+make
+popd
+clang-8 -S -emit-llvm -o test.bc test.c
+opt-8 -load _build/*/*SLVA* -slva test.bc > /dev/null

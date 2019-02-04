@@ -65,58 +65,33 @@ class LiveAnalysis {
 				const Instruction *Insn = &(*I);
 				errs() << "For instruction " << *Insn << "\n";
 				LiveVar gen, kill;
-				bool def = true;
-				bool strong = false;
-				const std::string opcode =
-				    Insn->getOpcodeName(Insn->getOpcode());
-				std::vector<std::string> noDef = {
-				    "ret",	 "br",	  "switch",
-				    "indirectbr",  "invoke",      "resume",
-				    "unreachable", "cleanupret",  "catchret",
-				    "catchpad",    "catchswitch", "alloca",
-				    "load"};
-				for (auto s : noDef) {
-					if (opcode == s) {
-						def = false;
+				const Value *LHSVal = dyn_cast<Value>(Insn);
+				kill.insert(LHSVal);
+				if(Out[Insn].count(LHSVal) == 0){
+					for(auto &op : Insn -> operands()){
+						gen.insert(op);
 					}
 				}
-				for (int i = 0; i < Insn->getNumOperands();
-				     i++) {
-					Value *operand = Insn->getOperand(i);
-					if (def) {
-						// a = b + c;
-						if (i == 0) {
-							if (Out[Insn].count(
-								operand) == 1) {
-								strong = true;
-							}
-							kill.insert(operand);
-						} else {
-							if (!strong) {
-								gen.insert(
-								    operand);
-							}
-						}
-					} else {
-						// return a;
-						gen.insert(operand);
+				In[Insn] = Out[Insn];
+				if(!kill.empty()){
+					errs() << "Kill set: ";
+					for (auto V : kill) {
+						errs() << V -> getName() << " ";
+						In[Insn].erase(V);
 					}
 				}
-				errs() << "Kill set: ";
-				for (auto V : kill) {
-					errs() << *V << ", ";
-					In[Insn].erase(V);
+				if(!gen.empty()){
+					errs() << "\n Gen set: ";
+					for (auto V : gen) {
+						errs() << V -> getName() << " ";
+						In[Insn].insert(V);
+					}
+					errs() << "\n";
 				}
-				errs() << "\n Gen set: ";
-				for (auto V : gen) {
-					errs() << *V << ", ";
-					In[Insn].insert(V);
-				}
-				errs() << "\n";
 				kill.clear();
 				gen.clear();
 			}
-			if (Out[&(*(BB->begin()))] !=
+			if (In[&(*(BB->begin()))] !=
 			    Out[&(*(BB->getTerminator()))]) {
 				for (const BasicBlock *Pre : predecessors(BB)) {
 					workList.push_back(Pre);

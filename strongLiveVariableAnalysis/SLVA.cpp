@@ -49,7 +49,6 @@ class LiveAnalysis {
 		for (const BasicBlock *BB : depth_first(&F.getEntryBlock())) {
 			workList.push_back(BB);
 		}
-		LLVM_DEBUG(dbgs() << workList.size() << "\n");
 		DenseMap<const Instruction *, LiveVar> In, Out;
 		while (!workList.empty()) {
 			errs() << "Size of worklist is : " << workList.size() << "\n";
@@ -91,8 +90,10 @@ class LiveAnalysis {
 				kill.clear();
 				gen.clear();
 			}
-			if (In[&(*(BB->begin()))] !=
-			    Out[&(*(BB->getTerminator()))]) {
+			auto FI = BB -> begin();
+			const Instruction *FInsn = &(*FI);
+			if (In[FInsn] !=
+			    Out[BB -> getTerminator()]) {
 				for (const BasicBlock *Pre : predecessors(BB)) {
 					workList.push_back(Pre);
 				}

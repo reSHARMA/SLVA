@@ -68,7 +68,8 @@ class LiveAnalysis {
 				kill.insert(LHSVal);
 				if(Out[Insn].count(LHSVal) == 0){
 					for(auto &op : Insn -> operands()){
-						gen.insert(op);
+						if(Instruction *I = dyn_cast<Instruction>(&op))
+							gen.insert(op);
 					}
 				}
 				In[Insn] = Out[Insn];
@@ -78,9 +79,10 @@ class LiveAnalysis {
 						errs() << V -> getName() << " ";
 						In[Insn].erase(V);
 					}
+					errs() << "\n";
 				}
 				if(!gen.empty()){
-					errs() << "\n Gen set: ";
+					errs() << "Gen set: ";
 					for (auto V : gen) {
 						errs() << V -> getName() << " ";
 						In[Insn].insert(V);

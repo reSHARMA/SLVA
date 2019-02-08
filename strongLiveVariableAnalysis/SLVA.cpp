@@ -104,6 +104,14 @@ class LiveAnalysis {
 		}
 		return false;
 	}
+
+	bool isLiveAfter(const Instruction *I, const Value *V){
+		return Out[I].count(V) != 0;
+	}
+
+	bool isLiveBefore(const Instruction *I, const Value *V){
+		return In[I].count(V) != 0;
+	}
 };
 
 class SLVAPass : public FunctionPass {
@@ -115,7 +123,7 @@ class SLVAPass : public FunctionPass {
 //		if (skipFunction(F)) return false;
 		LiveAnalysis L;
 		L.run(F);
-		return false;
+		return L;
 	}
 };
 }  // namespace llvm

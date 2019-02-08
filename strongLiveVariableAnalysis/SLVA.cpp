@@ -37,21 +37,24 @@
 
 using namespace llvm;
 
-namespace  {
+namespace {
 
 #define DEBUG_TYPE "slva"
 
 using LiveVar = DenseSet<const Value *>;
 class LiveAnalysis {
+       private:
+	DenseMap<const Instruction *, LiveVar> In, Out;
+
        public:
 	bool run(Function &F) {
-		std::vector<const BasicBlock*> workList;
+		std::vector<const BasicBlock *> workList;
 		for (const BasicBlock *BB : depth_first(&F.getEntryBlock())) {
 			workList.push_back(BB);
 		}
-		DenseMap<const Instruction *, LiveVar> In, Out;
 		while (!workList.empty()) {
-			errs() << "Size of worklist is : " << workList.size() << "\n";
+			errs() << "Size of worklist is : " << workList.size()
+			       << "\n";
 			const BasicBlock *BB = workList.back();
 			workList.pop_back();
 			for (const BasicBlock *Succ : successors(BB)) {
@@ -66,25 +69,27 @@ class LiveAnalysis {
 				LiveVar gen, kill;
 				const Value *LHSVal = dyn_cast<Value>(Insn);
 				kill.insert(LHSVal);
-				if(Out[Insn].count(LHSVal) == 0){
-					for(auto &op : Insn -> operands()){
-						if(Instruction *I = dyn_cast<Instruction>(&op))
+				if (Out[Insn].count(LHSVal) == 0) {
+					for (auto &op : Insn->operands()) {
+						if (Instruction *I =
+							dyn_cast<Instruction>(
+							    &op))
 							gen.insert(op);
 					}
 				}
 				In[Insn] = Out[Insn];
-				if(!kill.empty()){
+				if (!kill.empty()) {
 					errs() << "Kill set: ";
 					for (auto V : kill) {
-						errs() << V -> getName() << " ";
+						errs() << V->getName() << " ";
 						In[Insn].erase(V);
 					}
 					errs() << "\n";
 				}
-				if(!gen.empty()){
+				if (!gen.empty()) {
 					errs() << "Gen set: ";
 					for (auto V : gen) {
-						errs() << V -> getName() << " ";
+						errs() << V->getName() << " ";
 						In[Insn].insert(V);
 					}
 					errs() << "\n";
@@ -92,10 +97,20 @@ class LiveAnalysis {
 				kill.clear();
 				gen.clear();
 			}
-			auto FI = BB -> begin();
+			auto FI = BB->begin();
 			const Instruction *FInsn = &(*FI);
-			if (In[FInsn] !=
-			    Out[BB -> getTerminator()]) {
+			bool eq = false;
+			if (In[FInsn].size() ==
+			    Out[BB->getTerminator()].size()) {
+				for (auto I : In[FInsn]) {
+					if (Out[BB->getTerminator()].count(I) ==
+					    0) {
+						eq = false;
+						break;
+					}
+				}
+			}
+			if (!eq) {
 				for (const BasicBlock *Pre : predecessors(BB)) {
 					workList.push_back(Pre);
 				}
@@ -112,21 +127,21 @@ class SLVAPass : public FunctionPass {
 	SLVAPass() : FunctionPass(ID) {}
 
 	bool runOnFunction(Function &F) override {
-//		if (skipFunction(F)) return false;
+		//		if (skipFunction(F)) return false;
 		LiveAnalysis L;
 		L.run(F);
 		return false;
 	}
 };
-}  // namespace llvm
+}  // namespace
 
 char SLVAPass::ID = 0;
-static RegisterPass<SLVAPass>
-    X("slva",  // the option name -> -mba
-      "Strong live variable analysis", // option description
-      true, // true as we don't modify the CFG
-      true // true if we're writing an analysis
-      );
+static RegisterPass<SLVAPass> X(
+    "slva",			      // the option name -> -mba
+    "Strong live variable analysis",  // option description
+    true,			      // true as we don't modify the CFG
+    true			      // true if we're writing an analysis
+);
 /*
 static void registerSLVAPass(const PassManagerBuilder &,
 			     legacy::PassManagerBase &PM) {

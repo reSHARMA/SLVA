@@ -6,5 +6,5 @@ CXX_FLAGS = -fPIC   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACRO
 
 CXX_DEFINES = -DSLVAPass_EXPORTS
 
-CXX_INCLUDES = -I/usr/lib/llvm-6.0/include 
+CXX_INCLUDES = -I/usr/lib/llvm-8/include 
 

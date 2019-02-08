@@ -53,8 +53,8 @@ class LiveAnalysis {
 			workList.push_back(BB);
 		}
 		while (!workList.empty()) {
-			errs() << "Size of worklist is : " << workList.size()
-			       << "\n";
+			LLVM_DEBUG(dbgs() << "Size of worklist is : " << workList.size()
+			       << "\n");
 			const BasicBlock *BB = workList.back();
 			workList.pop_back();
 			for (const BasicBlock *Succ : successors(BB)) {
@@ -65,7 +65,7 @@ class LiveAnalysis {
 			}
 			for (auto I = BB->rbegin(); I != BB->rend(); I++) {
 				const Instruction *Insn = &(*I);
-				errs() << "For instruction " << *Insn << "\n";
+				LLVM_DEBUG(dbgs() << "For instruction " << *Insn << "\n");
 				LiveVar gen, kill;
 				const Value *LHSVal = dyn_cast<Value>(Insn);
 				kill.insert(LHSVal);
@@ -79,20 +79,20 @@ class LiveAnalysis {
 				}
 				In[Insn] = Out[Insn];
 				if (!kill.empty()) {
-					errs() << "Kill set: ";
+					LLVM_DEBUG(dbgs() << "Kill set: ");
 					for (auto V : kill) {
-						errs() << V->getName() << " ";
+						LLVM_DEBUG(dbgs() << V->getName() << " ");
 						In[Insn].erase(V);
 					}
-					errs() << "\n";
+					LLVM_DEBUG(dbgs() << "\n");
 				}
 				if (!gen.empty()) {
-					errs() << "Gen set: ";
+					LLVM_DEBUG(dbgs() << "Gen set: ");
 					for (auto V : gen) {
-						errs() << V->getName() << " ";
+						LLVM_DEBUG(dbgs() << V->getName() << " ");
 						In[Insn].insert(V);
 					}
-					errs() << "\n";
+					LLVM_DEBUG(dbgs() << "\n");
 				}
 				kill.clear();
 				gen.clear();
@@ -118,6 +118,14 @@ class LiveAnalysis {
 			}
 		}
 		return false;
+	}
+
+	bool isLiveBefore(const Instruction *I, const Value *V) {
+		return In[I].count(V) != 0;
+	}
+
+	bool isLiveAfter(const Instruction *I, const Value *V) {
+		return Out[I].count(V) != 0;
 	}
 };
 

@@ -59,7 +59,7 @@ class LiveAnalysis {
 			workList.pop_back();
 			for (const BasicBlock *Succ : successors(BB)) {
 				for (const Value *V :
-				     Out[Succ->getTerminator()]) {
+				     In[&(*(Succ->begin()))]) {
 					Out[BB->getTerminator()].insert(V);
 				}
 			}

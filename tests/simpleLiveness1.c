@@ -1,4 +1,6 @@
 int main(){
 	int a = 9;
-	return a;
+	a = 0;
+	a = 1;
+	a = 3;
 }

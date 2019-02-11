@@ -53,8 +53,8 @@ class LiveAnalysis {
 			workList.push_back(BB);
 		}
 		while (!workList.empty()) {
-			LLVM_DEBUG(dbgs() << "Size of worklist is : " << workList.size()
-			       << "\n");
+			LLVM_DEBUG(dbgs() << "Size of worklist is : "
+					  << workList.size() << "\n");
 			const BasicBlock *BB = workList.back();
 			workList.pop_back();
 			for (const BasicBlock *Succ : successors(BB)) {
@@ -65,11 +65,25 @@ class LiveAnalysis {
 			}
 			for (auto I = BB->rbegin(); I != BB->rend(); I++) {
 				const Instruction *Insn = &(*I);
-				LLVM_DEBUG(dbgs() << "For instruction " << *Insn << "\n");
+				LLVM_DEBUG(dbgs() << "For instruction " << *Insn
+						  << "\n");
 				LiveVar gen, kill;
-				const Value *LHSVal = dyn_cast<Value>(Insn);
+				const Value *LHSVal;
+				if(isa<StoreInst>(*Insn)){
+					LHSVal = Insn -> getOperand(1);
+					kill.insert(LHSVal);
+				} else {
+				LHSVal = dyn_cast<Value>(Insn);
 				kill.insert(LHSVal);
+				}
 				if (Out[Insn].count(LHSVal) == 0) {
+					if(isa<StoreInst>(*Insn)){
+						const Value *op = Insn -> getOperand(0);
+						if (const ConstantInt* CI = dyn_cast<ConstantInt>(op)){
+						} else {
+							gen.insert(op);
+						}
+					} else 
 					for (auto &op : Insn->operands()) {
 						if (Instruction *I =
 							dyn_cast<Instruction>(
@@ -81,7 +95,9 @@ class LiveAnalysis {
 				if (!kill.empty()) {
 					LLVM_DEBUG(dbgs() << "Kill set: ");
 					for (auto V : kill) {
-						LLVM_DEBUG(dbgs() << V->getName() << " ");
+						LLVM_DEBUG(dbgs()
+							   << V->getName()
+							   << " ");
 						In[Insn].erase(V);
 					}
 					LLVM_DEBUG(dbgs() << "\n");
@@ -89,7 +105,9 @@ class LiveAnalysis {
 				if (!gen.empty()) {
 					LLVM_DEBUG(dbgs() << "Gen set: ");
 					for (auto V : gen) {
-						LLVM_DEBUG(dbgs() << V->getName() << " ");
+						LLVM_DEBUG(dbgs()
+							   << V->getName()
+							   << " ");
 						In[Insn].insert(V);
 					}
 					LLVM_DEBUG(dbgs() << "\n");
@@ -116,6 +134,23 @@ class LiveAnalysis {
 				}
 				// put all pre-bb into worklist
 			}
+		}
+		if(true){
+			for(Function::iterator b = F.begin(); b != F.end(); b++){
+				const BasicBlock* B = &*b;
+				for(auto i = B -> begin(); i != B -> end();i++){
+					const Instruction* I = &*i;
+					for(auto V : In[I]){
+						errs() << V -> getName() << " ";
+					}
+					errs() << "\n" << *I << "\n"; 
+					for(auto V : Out[I]){
+						errs() << V -> getName() << " ";
+					}
+					errs() << "\n";
+				}
+
+			}	
 		}
 		return false;
 	}

@@ -58,8 +58,7 @@ class LiveAnalysis {
 			const BasicBlock *BB = workList.back();
 			workList.pop_back();
 			for (const BasicBlock *Succ : successors(BB)) {
-				for (const Value *V :
-				     In[&(*(Succ->begin()))]) {
+				for (const Value *V : In[&(*(Succ->begin()))]) {
 					Out[BB->getTerminator()].insert(V);
 				}
 			}
@@ -68,22 +67,27 @@ class LiveAnalysis {
 				LLVM_DEBUG(dbgs() << "For instruction " << *Insn
 						  << "\n");
 				LiveVar gen, kill;
+				if (I != BB->rbegin()) {
+					auto tempI = I;
+					tempI--;
+					Out[Insn] = In[&*tempI];
+				}
 				const Value *LHSVal;
-				if(isa<StoreInst>(*Insn)){
-					LHSVal = Insn -> getOperand(1);
+				if (isa<StoreInst>(*Insn)) {
+					LHSVal = Insn->getOperand(1);
 					kill.insert(LHSVal);
 				} else {
-				LHSVal = dyn_cast<Value>(Insn);
-				kill.insert(LHSVal);
+					LHSVal = dyn_cast<Value>(Insn);
+					kill.insert(LHSVal);
 				}
-				if (Out[Insn].count(LHSVal) == 0) {
-					if(isa<StoreInst>(*Insn)){
-						const Value *op = Insn -> getOperand(0);
-						if (const ConstantInt* CI = dyn_cast<ConstantInt>(op)){
-						} else {
-							gen.insert(op);
-						}
-					} else 
+				if (isa<StoreInst>(*Insn)) {
+					const Value *op = Insn->getOperand(0);
+					if (const ConstantInt *CI =
+						dyn_cast<ConstantInt>(op)) {
+					} else {
+						gen.insert(op);
+					}
+				} else {
 					for (auto &op : Insn->operands()) {
 						if (Instruction *I =
 							dyn_cast<Instruction>(
@@ -102,7 +106,9 @@ class LiveAnalysis {
 					}
 					LLVM_DEBUG(dbgs() << "\n");
 				}
-				if (!gen.empty()) {
+				if (!gen.empty() &&
+				    (LHSVal->getName() == "" ||
+				     isLiveAfter(Insn, LHSVal))) {
 					LLVM_DEBUG(dbgs() << "Gen set: ");
 					for (auto V : gen) {
 						LLVM_DEBUG(dbgs()
@@ -135,22 +141,22 @@ class LiveAnalysis {
 				// put all pre-bb into worklist
 			}
 		}
-		if(true){
-			for(Function::iterator b = F.begin(); b != F.end(); b++){
-				const BasicBlock* B = &*b;
-				for(auto i = B -> begin(); i != B -> end();i++){
-					const Instruction* I = &*i;
-					for(auto V : In[I]){
-						errs() << V -> getName() << " ";
+		if (true) {
+			for (Function::iterator b = F.begin(); b != F.end();
+			     b++) {
+				const BasicBlock *B = &*b;
+				for (auto i = B->begin(); i != B->end(); i++) {
+					const Instruction *I = &*i;
+					for (auto V : In[I]) {
+						errs() << V->getName() << " ";
 					}
-					errs() << "\n" << *I << "\n"; 
-					for(auto V : Out[I]){
-						errs() << V -> getName() << " ";
+					errs() << "\n" << *I << "\n";
+					for (auto V : Out[I]) {
+						errs() << V->getName() << " ";
 					}
 					errs() << "\n";
 				}
-
-			}	
+			}
 		}
 		return false;
 	}
@@ -161,6 +167,26 @@ class LiveAnalysis {
 
 	bool isLiveAfter(const Instruction *I, const Value *V) {
 		return Out[I].count(V) != 0;
+	}
+	void pOut(const Instruction *I) {
+		errs() << "Out \n";
+		for (auto I : Out[I]) {
+			errs() << I->getName() << " ";
+		}
+		errs() << "\n";
+	}
+	void pIn(const Instruction *I) {
+		errs() << "In \n";
+		for (auto I : In[I]) {
+			errs() << I->getName() << " ";
+		}
+		errs() << "\n";
+	}
+	void print(LiveVar jset) {
+		for (auto a : jset) {
+			errs() << a->getName() << " ";
+		}
+		errs() << "\n";
 	}
 };
 

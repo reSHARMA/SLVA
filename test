@@ -2,10 +2,11 @@
 
 set -x
 
+mkdir -p _build
 pushd _build
-rm -rf ./*
 cmake ..
 make
 popd
 clang-8 -S -emit-llvm -o test.bc test.c
 opt-8 -instnamer -load _build/*/*SLVA* -slva test.bc > /dev/null
+rm -rf _build test.bc

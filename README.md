@@ -1,9 +1,5 @@
 # Strong Live Variable Analysis in LLVM
 
-Ever tried opening a beer bottle with a pen? I analogously did by writing a clang(cfg) based analysis in llvm following classical dataflow equations. I ended up with a hole in the cap (sadly the beer is no more chilled).
-
-![image](/image/cap.png)
-
 ## Liveness of a variable
 
 A variable is said to be live at some point if it holds a value that may be needed in the future, or equivalently if its value may be read before the next time the variable is written to.
@@ -21,5 +17,5 @@ But if y is not live after ln 1 ie y = a is a dead statement and hence ln 1 shou
 ```sh
 $ clone the repo
 $ cd ~/where-ever-you-cloned-it/
-$ bash ./test
+$ bash ./test.sh
 ```

@@ -105,7 +105,7 @@ class LiveAnalysis {
 			}
 			auto FI = BB->begin();
 			const Instruction *FInsn = &(*FI);
-			bool eq = false;
+			bool eq = true;
 			if (In[FInsn].size() ==
 			    Out[BB->getTerminator()].size()) {
 				for (auto I : In[FInsn]) {

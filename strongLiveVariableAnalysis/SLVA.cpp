@@ -4,6 +4,8 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <queue>
+#include <bits/stdc++.h>
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/iterator_range.h"
@@ -27,18 +29,29 @@ using LiveVar = DenseSet<const Value *>;
 class LiveAnalysis {
        private:
 	DenseMap<const Instruction *, LiveVar> In, Out;
-
        public:
 	bool run(Function &F) {
-		std::vector<const BasicBlock *> workList;
+		std::queue<const BasicBlock *> workList;
+		std::vector<const BasicBlock *> work;
 		for (const BasicBlock *BB : depth_first(&F.getEntryBlock())) {
-			workList.push_back(BB);
+			//workList.push(BB);
+			work.push_back(BB);
 		}
+		reverse(work.begin(),work.end());
+		for(auto it : work)
+		{
+			workList.push(it);
+			errs()<<it->getName()<<"\n";
+		}
+		int ctr=0;
 		while (!workList.empty()) {
 			LLVM_DEBUG(dbgs() << "Size of worklist is : "
 					  << workList.size() << "\n");
-			const BasicBlock *BB = workList.back();
-			workList.pop_back();
+			const BasicBlock *BB = workList.front();
+			ctr++;
+			//std::cerr<<workList.size()<<" ********************************************************** "<<ctr<<std::endl;
+			workList.pop();
+			auto temp = In[&(*BB->begin())];
 			for (const BasicBlock *Succ : successors(BB)) {
 				for (const Value *V : In[&(*(Succ->begin()))]) {
 					Out[BB->getTerminator()].insert(V);
@@ -105,11 +118,11 @@ class LiveAnalysis {
 			}
 			auto FI = BB->begin();
 			const Instruction *FInsn = &(*FI);
-			bool eq = false;
+			bool eq = true ;
 			if (In[FInsn].size() ==
-			    Out[BB->getTerminator()].size()) {
+			    temp.size()) {
 				for (auto I : In[FInsn]) {
-					if (Out[BB->getTerminator()].count(I) ==
+					if (temp.count(I) ==
 					    0) {
 						eq = false;
 						break;
@@ -117,11 +130,14 @@ class LiveAnalysis {
 				}
 			}
 			if (!eq) {
+				workList.push(BB);
 				for (const BasicBlock *Pre : predecessors(BB)) {
-					workList.push_back(Pre);
+					workList.push(Pre);
 				}
 				// put all pre-bb into worklist
 			}
+
+	
 		}
 		if (true) {
 			for (Function::iterator b = F.begin(); b != F.end();
